@@ -2,6 +2,15 @@ import * as XLSX from 'xlsx';
 import { Transaction, FixedExpenseTemplate, MonthSummary } from '../types';
 import { DEFAULT_FIXED_TEMPLATES } from '../constants';
 import masterExcelData from '../data/allTransactions.json';
+import {
+  fetchTransactionsFromCloud,
+  fetchTemplatesFromCloud,
+  saveTransactionToCloud,
+  saveTransactionsBatchToCloud,
+  deleteTransactionFromCloud,
+  deleteTransactionsBatchFromCloud,
+  saveTemplatesToCloud,
+} from './supabase';
 
 const TX_STORAGE_KEY = 'spese_gianluca_tx_v1';
 const TEMPLATES_STORAGE_KEY = 'spese_gianluca_templates_v1';
@@ -174,6 +183,36 @@ export function getMonthTransactions(yearMonth: string): Transaction[] {
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 }
 
+// Sincronizzazione iniziale e continua con Supabase Cloud
+export async function syncDataWithCloud(): Promise<{
+  transactions: Transaction[];
+  templates: FixedExpenseTemplate[];
+} | null> {
+  try {
+    const [cloudTxs, cloudTemplates] = await Promise.all([
+      fetchTransactionsFromCloud(),
+      fetchTemplatesFromCloud(),
+    ]);
+
+    let txsToReturn = getAllTransactions();
+    if (cloudTxs && cloudTxs.length > 0) {
+      localStorage.setItem(TX_STORAGE_KEY, JSON.stringify(cloudTxs));
+      txsToReturn = cloudTxs;
+    }
+
+    let templatesToReturn = getFixedTemplates();
+    if (cloudTemplates && cloudTemplates.length > 0) {
+      localStorage.setItem(TEMPLATES_STORAGE_KEY, JSON.stringify(cloudTemplates));
+      templatesToReturn = cloudTemplates;
+    }
+
+    return { transactions: txsToReturn, templates: templatesToReturn };
+  } catch (err) {
+    console.error('Errore durante sync con Supabase:', err);
+    return null;
+  }
+}
+
 // Aggiunge una transazione
 export function addTransaction(
   tx: Omit<Transaction, 'id'>
@@ -184,6 +223,7 @@ export function addTransaction(
     id: 'tx-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
   };
   saveAllTransactions([newTx, ...all]);
+  saveTransactionToCloud(newTx);
   return newTx;
 }
 
@@ -194,6 +234,7 @@ export function updateTransaction(updatedTx: Transaction): void {
   if (index !== -1) {
     all[index] = updatedTx;
     saveAllTransactions([...all]);
+    saveTransactionToCloud(updatedTx);
   }
 }
 
@@ -202,6 +243,7 @@ export function deleteTransaction(id: string): void {
   const all = getAllTransactions();
   const filtered = all.filter((t) => t.id !== id);
   saveAllTransactions(filtered);
+  deleteTransactionFromCloud(id);
 }
 
 // Elimina movimenti multipli in blocco
@@ -210,6 +252,7 @@ export function deleteMultipleTransactions(ids: string[]): void {
   const all = getAllTransactions();
   const filtered = all.filter((t) => !idSet.has(t.id));
   saveAllTransactions(filtered);
+  deleteTransactionsBatchFromCloud(ids);
 }
 
 // Elimina tutti i movimenti del mese o tutti in assoluto
@@ -228,6 +271,7 @@ export function importMasterExcelDataset(mode: 'replace' | 'merge'): { count: nu
   const masterTxs = masterExcelData as Transaction[];
   if (mode === 'replace') {
     saveAllTransactions(masterTxs);
+    saveTransactionsBatchToCloud(masterTxs);
     return { count: masterTxs.length, total: masterTxs.length };
   } else {
     const existing = getAllTransactions();
@@ -241,6 +285,7 @@ export function importMasterExcelDataset(mode: 'replace' | 'merge'): { count: nu
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );
     saveAllTransactions(merged);
+    saveTransactionsBatchToCloud(toAdd);
     return { count: toAdd.length, total: merged.length };
   }
 }
@@ -397,6 +442,7 @@ export async function parseAndImportFile(
 
         if (mode === 'replace') {
           saveAllTransactions(parsedTxs);
+          saveTransactionsBatchToCloud(parsedTxs);
           resolve({ count: parsedTxs.length, total: parsedTxs.length });
         } else {
           const existing = getAllTransactions();
@@ -410,6 +456,7 @@ export async function parseAndImportFile(
             (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
           );
           saveAllTransactions(merged);
+          saveTransactionsBatchToCloud(toAdd);
           resolve({ count: toAdd.length, total: merged.length });
         }
       } catch (err) {
@@ -428,6 +475,7 @@ export function toggleSettled(id: string): void {
   if (tx) {
     tx.isSettled = !tx.isSettled;
     saveAllTransactions([...all]);
+    saveTransactionToCloud(tx);
   }
 }
 
@@ -457,6 +505,7 @@ export function resetFixedTemplatesToDefault(): FixedExpenseTemplate[] {
 
 export function saveFixedTemplates(templates: FixedExpenseTemplate[]): void {
   localStorage.setItem(TEMPLATES_STORAGE_KEY, JSON.stringify(templates));
+  saveTemplatesToCloud(templates);
 }
 
 // Applica le spese fisse al mese indicato se non già presenti
@@ -493,6 +542,7 @@ export function applyFixedExpensesToMonth(yearMonth: string): { added: number } 
 
   if (addedCount > 0) {
     saveAllTransactions([...newTxs, ...all]);
+    saveTransactionsBatchToCloud(newTxs);
   }
 
   return { added: addedCount };

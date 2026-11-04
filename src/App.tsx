@@ -5,6 +5,8 @@ import {
   CalendarCheck,
   Wallet,
   Database,
+  CloudOff,
+  RefreshCw,
 } from 'lucide-react';
 import {
   getMonthTransactions,
@@ -17,7 +19,9 @@ import {
   saveFixedTemplates,
   applyFixedExpensesToMonth,
   calculateMonthSummary,
+  syncDataWithCloud,
 } from './services/storage';
+import { subscribeToTransactions } from './services/supabase';
 import { Transaction, FixedExpenseTemplate } from './types';
 import { DashboardCards } from './components/DashboardCards';
 import { MonthSelector } from './components/MonthSelector';
@@ -36,6 +40,7 @@ export const App: React.FC = () => {
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [fixedTemplates, setFixedTemplates] = useState<FixedExpenseTemplate[]>(() => getFixedTemplates());
+  const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'offline'>('syncing');
 
   // Modali
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -54,6 +59,29 @@ export const App: React.FC = () => {
   useEffect(() => {
     loadData();
   }, [selectedYearMonth]);
+
+  // Sincronizzazione iniziale con Supabase e Realtime listener
+  useEffect(() => {
+    setSyncStatus('syncing');
+    syncDataWithCloud()
+      .then((res) => {
+        if (res) {
+          loadData();
+          setSyncStatus('synced');
+        } else {
+          setSyncStatus('offline');
+        }
+      })
+      .catch(() => setSyncStatus('offline'));
+
+    const unsubscribe = subscribeToTransactions(() => {
+      loadData();
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
 
   // Calcolo KPI del mese
   const summary = calculateMonthSummary(transactions);
@@ -129,7 +157,26 @@ export const App: React.FC = () => {
               <h1 className="font-extrabold text-sm sm:text-base leading-tight tracking-tight text-white">
                 Spese & Budget
               </h1>
-              <p className="text-[11px] text-slate-500">Fineco & Conti</p>
+              <div className="flex items-center gap-2">
+                <p className="text-[11px] text-slate-500">Fineco & Conti</p>
+                <div className="flex items-center text-[10px]">
+                  {syncStatus === 'syncing' && (
+                    <span className="flex items-center gap-1 text-cyan-400 font-medium">
+                      <RefreshCw className="w-2.5 h-2.5 animate-spin" /> Cloud...
+                    </span>
+                  )}
+                  {syncStatus === 'synced' && (
+                    <span className="flex items-center gap-1 text-emerald-400 font-medium" title="Sincronizzato con Supabase">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Cloud
+                    </span>
+                  )}
+                  {syncStatus === 'offline' && (
+                    <span className="flex items-center gap-1 text-slate-500" title="Modalità locale">
+                      <CloudOff className="w-2.5 h-2.5" /> Locale
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
