@@ -64,8 +64,12 @@ export interface PortfolioAsset {
   name: string;
   symbol: string;
   type: AssetClassType;
-  invested: number;
-  currentValue: number;
+  quantity?: number; // Q.tà quote o valore nominale (es. 348 azioni, 11000 nominale)
+  marketPrice?: number; // Prezzo unitario di mercato (es. 9.768 € per azione o 97.99 per obbligazione)
+  averagePrice?: number; // Prezzo medio di carico PMC (es. 5.75 €)
+  isin?: string; // Codice ISIN strumento (es. IT0003128367)
+  invested: number; // Totale capitale investito (€)
+  currentValue: number; // Controvalore attuale di mercato (€)
   notes?: string;
   lastUpdated?: string;
 }
