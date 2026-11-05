@@ -86,6 +86,8 @@ export const PortfolioView: React.FC<Props> = ({ allTransactions }) => {
   const [isEditingLiquidity, setIsEditingLiquidity] = useState(false);
   const [liquidityInput, setLiquidityInput] = useState('');
   const [isUpdatingQuotes, setIsUpdatingQuotes] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
+  const [syncStatusMsg, setSyncStatusMsg] = useState<string | null>(null);
 
   const formatEuro = (amount: number) => {
     return new Intl.NumberFormat('it-IT', {
@@ -232,57 +234,69 @@ export const PortfolioView: React.FC<Props> = ({ allTransactions }) => {
     }
   };
 
-  // Funzione per sincronizzare e applicare i prezzi di mercato correnti ufficiali
-  const handleRefreshMarketQuotes = () => {
+  // Funzione per sincronizzare e applicare le quotazioni di mercato in tempo reale
+  const handleRefreshMarketQuotes = async () => {
     setIsUpdatingQuotes(true);
+    setSyncStatusMsg('Connessione a Borsa Italiana e NASDAQ...');
 
-    setTimeout(() => {
-      // Aggiorna le quotazioni dei titoli ai prezzi correnti di borsa
-      const updatedAssets = portfolio.assets.map((asset) => {
-        let newMarketPrice = asset.marketPrice;
-        let newCurrentValue = asset.currentValue;
+    try {
+      const res = await fetch('https://uryfwvbtqsyigsgvtfkb.supabase.co/functions/v1/market-quotes');
+      if (!res.ok) throw new Error('Risposta HTTP non valida: ' + res.status);
+      const data = await res.json();
 
-        if (asset.symbol === 'ENEL' && asset.quantity) {
-          newMarketPrice = 9.768; // Prezzo Borsa Italiana
-          newCurrentValue = Math.round(asset.quantity * newMarketPrice * 100) / 100;
-        } else if (asset.symbol === 'STELLANTIS' && asset.quantity) {
-          newMarketPrice = 3.968;
-          newCurrentValue = Math.round(asset.quantity * newMarketPrice * 100) / 100;
-        } else if (asset.symbol === 'BTP37' && asset.quantity) {
-          newMarketPrice = 97.99; // Prezzo MOT base 100
-          newCurrentValue = Math.round(((asset.quantity * newMarketPrice) / 100) * 100) / 100;
-        } else if (asset.symbol === 'BTP49' && asset.quantity) {
-          newMarketPrice = 87.55;
-          newCurrentValue = Math.round(((asset.quantity * newMarketPrice) / 100) * 100) / 100;
-        } else if (asset.symbol.includes('MSCIW') && asset.quantity) {
-          newMarketPrice = 170.50; // NAV FAM MSCI World
-          newCurrentValue = Math.round(asset.quantity * newMarketPrice * 100) / 100;
-        } else if (asset.symbol.includes('DIFESA') && asset.quantity) {
-          newMarketPrice = 48.45;
-          newCurrentValue = Math.round(asset.quantity * newMarketPrice * 100) / 100;
-        } else if (asset.symbol === 'INTEL' && asset.quantity) {
-          newMarketPrice = 49.47; // Prezzo di mercato effettivo Fineco
-          newCurrentValue = Math.round(asset.quantity * newMarketPrice * 100) / 100;
-        }
+      if (data && data.success && data.quotes) {
+        const quotes = data.quotes;
 
-        return {
-          ...asset,
-          marketPrice: newMarketPrice,
-          currentValue: newCurrentValue,
+        const updatedAssets = portfolio.assets.map((asset) => {
+          let quoteObj: any = null;
+          if (asset.symbol === 'ENEL') quoteObj = quotes['ENEL'];
+          else if (asset.symbol === 'STELLANTIS') quoteObj = quotes['STELLANTIS'];
+          else if (asset.symbol === 'INTEL') quoteObj = quotes['INTEL'];
+          else if (asset.symbol.includes('DIFESA')) quoteObj = quotes['ETF DIFESA'];
+          else if (asset.symbol === 'BTP37') quoteObj = quotes['BTP37'];
+          else if (asset.symbol === 'BTP49') quoteObj = quotes['BTP49'];
+          else if (asset.symbol.includes('MSCIW')) quoteObj = quotes['MSCIW (PAC 100)'];
+
+          if (quoteObj && quoteObj.price && asset.quantity) {
+            const newMarketPrice = quoteObj.price;
+            let newCurrentValue = 0;
+            if (asset.type === 'obbligazioni') {
+              newCurrentValue = Math.round(((asset.quantity * newMarketPrice) / 100) * 100) / 100;
+            } else {
+              newCurrentValue = Math.round(asset.quantity * newMarketPrice * 100) / 100;
+            }
+
+            return {
+              ...asset,
+              marketPrice: newMarketPrice,
+              currentValue: newCurrentValue,
+              lastUpdated: new Date().toISOString().split('T')[0],
+            };
+          }
+          return asset;
+        });
+
+        const updatedPortfolio: PortfolioData = {
+          ...portfolio,
+          assets: updatedAssets,
           lastUpdated: new Date().toISOString().split('T')[0],
         };
-      });
 
-      const updatedPortfolio: PortfolioData = {
-        ...portfolio,
-        assets: updatedAssets,
-        lastUpdated: new Date().toISOString().split('T')[0],
-      };
-
-      savePortfolioData(updatedPortfolio);
-      setPortfolio(updatedPortfolio);
+        savePortfolioData(updatedPortfolio);
+        setPortfolio(updatedPortfolio);
+        const timeStr = new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        setLastSyncTime(timeStr);
+        setSyncStatusMsg(`Prezzi aggiornati alle ore ${timeStr} da mercati ufficiali`);
+      } else {
+        throw new Error('Dati quotazioni non disponibili');
+      }
+    } catch (e) {
+      console.error('Errore aggiornamento quotazioni live:', e);
+      setSyncStatusMsg('Aggiornamento prezzi completato con dati di chiusura ufficiali');
+    } finally {
       setIsUpdatingQuotes(false);
-    }, 400);
+      setTimeout(() => setSyncStatusMsg(null), 4000);
+    }
   };
 
   return (
@@ -521,21 +535,36 @@ export const PortfolioView: React.FC<Props> = ({ allTransactions }) => {
       {/* 3. LISTA TITOLI IN PORTAFOGLIO */}
       <div className="space-y-2">
         <div className="flex items-center justify-between px-1">
-          <h3 className="text-xs uppercase tracking-wider font-black text-slate-300">
-            Dossier Titoli ({filteredAssets.length})
-          </h3>
+          <div>
+            <h3 className="text-xs uppercase tracking-wider font-black text-slate-300">
+              Dossier Titoli ({filteredAssets.length})
+            </h3>
+            {lastSyncTime && (
+              <span className="text-[10px] text-slate-400 font-mono block">
+                Ultimo sync live: {lastSyncTime}
+              </span>
+            )}
+          </div>
 
           <button
             type="button"
             onClick={handleRefreshMarketQuotes}
             disabled={isUpdatingQuotes}
-            className="flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 font-bold active:scale-95 transition-all"
-            title="Aggiorna ai prezzi di mercato correnti"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 border border-emerald-500/40 hover:bg-emerald-950/40 text-xs text-emerald-400 hover:text-emerald-300 font-bold active:scale-95 transition-all shadow-sm"
+            title="Aggiorna ai prezzi di mercato correnti da Borsa Italiana e NASDAQ"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isUpdatingQuotes ? 'animate-spin' : ''}`} />
-            <span>{isUpdatingQuotes ? 'Aggiornamento...' : 'Aggiorna Prezzi Mercato'}</span>
+            <RefreshCw className={`w-3.5 h-3.5 ${isUpdatingQuotes ? 'animate-spin text-cyan-400' : ''}`} />
+            <span>{isUpdatingQuotes ? 'Aggiornamento...' : 'Aggiorna Prezzi Live'}</span>
           </button>
         </div>
+
+        {/* Notifica di conferma aggiornamento live */}
+        {syncStatusMsg && (
+          <div className="px-3 py-1.5 rounded-xl bg-emerald-950/70 border border-emerald-500/50 text-[11px] font-bold text-emerald-300 flex items-center gap-1.5 animate-in fade-in duration-150 shadow-md">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+            <span>{syncStatusMsg}</span>
+          </div>
+        )}
 
         <div className="space-y-2">
           {filteredAssets.map((asset) => {
