@@ -292,6 +292,8 @@ export const App: React.FC = () => {
             <section className="pt-1">
               <TransactionsList
                 transactions={transactions}
+                allTransactions={allTransactions}
+                currentMonthLabel={capitalizedMonthLabel}
                 onToggleSettled={handleToggleSettled}
                 onDelete={handleDeleteTransaction}
                 onDeleteMultiple={handleDeleteMultipleTransactions}

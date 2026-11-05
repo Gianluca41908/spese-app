@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   CheckCircle2,
   Circle,
@@ -11,12 +11,17 @@ import {
   Plus,
   ChevronDown,
   FileText,
+  Search,
+  X,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { Transaction } from '../types';
 import { getSmartTitle } from '../utils/transactionFormatters';
 
 interface Props {
   transactions: Transaction[];
+  allTransactions?: Transaction[];
+  currentMonthLabel?: string;
   onToggleSettled: (id: string) => void;
   onDelete: (id: string) => void;
   onDeleteMultiple: (ids: string[]) => void;
@@ -26,6 +31,8 @@ interface Props {
 
 export const TransactionsList: React.FC<Props> = ({
   transactions,
+  allTransactions = [],
+  currentMonthLabel = 'Mese Corrente',
   onToggleSettled,
   onDelete,
   onDeleteMultiple,
@@ -37,12 +44,12 @@ export const TransactionsList: React.FC<Props> = ({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const filtered = transactions.filter((t) => {
-    if (filter === 'variabili') return !t.isFixed;
-    if (filter === 'fisse') return t.isFixed;
-    if (filter === 'inv') return t.isInvestment;
-    return true;
-  });
+  // Stati della Barra di Ricerca e Filtri Avanzati
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchScope, setSearchScope] = useState<'month' | 'all'>('month');
+  const [amountFilter, setAmountFilter] = useState<'all' | 'gt50' | 'gt100'>('all');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'uscite' | 'entrate'>('all');
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   const formatEuro = (amount: number) => {
     return new Intl.NumberFormat('it-IT', {
@@ -52,13 +59,90 @@ export const TransactionsList: React.FC<Props> = ({
     }).format(amount);
   };
 
-  const formatDate = (dateStr: string) => {
+  const formatDate = (dateStr: string, showYear = false) => {
     const parts = dateStr.split('-');
     if (parts.length >= 3) {
+      if (showYear || searchScope === 'all') {
+        const yr = parts[0].slice(2);
+        return `${parts[2]}/${parts[1]}/${yr}`;
+      }
       return `${parts[2]}/${parts[1]}`;
     }
     return dateStr;
   };
+
+  // Base pool di movimenti: se si cerca in tutto lo storico e ci sono movimenti globali
+  const pool = useMemo(() => {
+    if (searchScope === 'all' && allTransactions.length > 0) {
+      return allTransactions;
+    }
+    return transactions;
+  }, [searchScope, allTransactions, transactions]);
+
+  // Filtro combinato (Ricerca + Categoria + Tipo + Importo)
+  const filtered = useMemo(() => {
+    let result = pool;
+
+    // 1. Filtro Tipo (Entrata / Uscita)
+    if (typeFilter === 'uscite') {
+      result = result.filter((t) => t.type === 'uscita');
+    } else if (typeFilter === 'entrate') {
+      result = result.filter((t) => t.type === 'entrata');
+    }
+
+    // 2. Filtro Categoria Rapido
+    if (filter === 'variabili') {
+      result = result.filter((t) => !t.isFixed);
+    } else if (filter === 'fisse') {
+      result = result.filter((t) => t.isFixed);
+    } else if (filter === 'inv') {
+      result = result.filter((t) => t.isInvestment);
+    }
+
+    // 3. Filtro Soglia Importo
+    if (amountFilter === 'gt50') {
+      result = result.filter((t) => t.amount >= 50);
+    } else if (amountFilter === 'gt100') {
+      result = result.filter((t) => t.amount >= 100);
+    }
+
+    // 4. Query di Ricerca Testuale (Descrizione, Merchant, Note Fineco, Categoria, Importo)
+    const q = searchQuery.trim().toLowerCase();
+    if (q) {
+      const words = q.split(/\s+/).filter(Boolean);
+      result = result.filter((tx) => {
+        const smart = getSmartTitle(tx.description, tx.notes).toLowerCase();
+        const desc = tx.description.toLowerCase();
+        const notes = (tx.notes || '').toLowerCase();
+        const cat = tx.category.toLowerCase();
+        const amtStr = tx.amount.toString();
+        const amtFormatted = formatEuro(tx.amount).toLowerCase();
+
+        return words.every(
+          (w) =>
+            smart.includes(w) ||
+            desc.includes(w) ||
+            notes.includes(w) ||
+            cat.includes(w) ||
+            amtStr.includes(w) ||
+            amtFormatted.includes(w)
+        );
+      });
+    }
+
+    return result;
+  }, [pool, typeFilter, filter, amountFilter, searchQuery]);
+
+  // Statistiche live della ricerca corrente
+  const searchStats = useMemo(() => {
+    let uscite = 0;
+    let entrate = 0;
+    filtered.forEach((t) => {
+      if (t.type === 'uscita') uscite += t.amount;
+      else entrate += t.amount;
+    });
+    return { uscite, entrate, count: filtered.length };
+  }, [filtered]);
 
   // Gestione Selezione Singola
   const handleToggleSelect = (id: string) => {
@@ -103,16 +187,183 @@ export const TransactionsList: React.FC<Props> = ({
     setExpandedId((prev) => (prev === id ? null : id));
   };
 
+  const hasActiveFilters =
+    searchQuery.trim() !== '' ||
+    searchScope !== 'month' ||
+    amountFilter !== 'all' ||
+    typeFilter !== 'all';
+
+  const clearAllFilters = () => {
+    setSearchQuery('');
+    setSearchScope('month');
+    setAmountFilter('all');
+    setTypeFilter('all');
+    setFilter('all');
+  };
+
   return (
     <div className="space-y-2.5">
       {/* 1. Titolo Movimenti Registrati a tutta larghezza */}
       <div className="w-full flex items-center justify-between pb-0.5 px-0.5">
-        <h2 className="text-xs uppercase tracking-wider font-black text-slate-300 w-full">
-          Movimenti Registrati ({transactions.length})
+        <h2 className="text-xs uppercase tracking-wider font-black text-slate-300 w-full flex items-center justify-between">
+          <span>
+            {searchScope === 'all'
+              ? `Storico Globale (${filtered.length} di ${allTransactions.length})`
+              : `Movimenti Registrati (${filtered.length})`}
+          </span>
+          {hasActiveFilters && (
+            <button
+              type="button"
+              onClick={clearAllFilters}
+              className="text-[11px] text-emerald-400 hover:text-emerald-300 font-bold lowercase normal-case tracking-normal underline"
+            >
+              resetta filtri
+            </button>
+          )}
         </h2>
       </div>
 
-      {/* 2. Riga con Nuovo e Seleziona affiancati */}
+      {/* 2. BARRA DI RICERCA GLOBALE & PER ESERCENTE */}
+      <div className="space-y-1.5">
+        <div className="relative flex items-center">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Cerca esercente o spesa (es. Zara, Ipercoop, Unipol, 150...)"
+            className="w-full bg-slate-900 border border-slate-700/80 focus:border-emerald-500 rounded-2xl py-2.5 pl-9 pr-16 text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-none transition-all shadow-inner"
+          />
+          <div className="absolute right-2 flex items-center gap-1">
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+                title="Cancella testo"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+              className={`p-1.5 rounded-xl border transition-all ${
+                showAdvancedFilters || amountFilter !== 'all' || typeFilter !== 'all'
+                  ? 'bg-emerald-600 border-emerald-500 text-white'
+                  : 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white'
+              }`}
+              title="Filtri avanzati per importo e tipo"
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Banner Risultati Ricerca & Selettore Ambito (Mese vs Tutto lo Storico) */}
+        {(searchQuery.trim() !== '' || searchScope === 'all') && (
+          <div className="p-3 bg-slate-900 border border-slate-700/80 rounded-2xl space-y-2 shadow-md animate-in fade-in duration-150">
+            {/* Toggle Ambito: Solo Mese vs Tutto lo Storico */}
+            {allTransactions.length > 0 && (
+              <div className="grid grid-cols-2 p-1 bg-slate-950 rounded-xl border border-slate-800 text-[11px] font-bold">
+                <button
+                  type="button"
+                  onClick={() => setSearchScope('month')}
+                  className={`py-1.5 px-2 rounded-lg transition-all ${
+                    searchScope === 'month'
+                      ? 'bg-emerald-600 text-white shadow-sm'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  Nel mese ({currentMonthLabel})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSearchScope('all')}
+                  className={`py-1.5 px-2 rounded-lg transition-all ${
+                    searchScope === 'all'
+                      ? 'bg-cyan-600 text-white shadow-sm'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  Tutto lo Storico ({allTransactions.length})
+                </button>
+              </div>
+            )}
+
+            {/* Riepilogo Totali della Ricerca */}
+            <div className="flex items-center justify-between text-xs pt-0.5">
+              <span className="text-slate-300 font-semibold">
+                {filtered.length} {filtered.length === 1 ? 'risultato trovato' : 'risultati trovati'}
+              </span>
+
+              <div className="flex items-center gap-2">
+                {searchStats.uscite > 0 && (
+                  <span className="font-mono font-bold text-rose-400 text-xs">
+                    -{formatEuro(searchStats.uscite)}
+                  </span>
+                )}
+                {searchStats.entrate > 0 && (
+                  <span className="font-mono font-bold text-emerald-400 text-xs">
+                    +{formatEuro(searchStats.entrate)}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Filtri Avanzati (Espandibili): Importo & Tipo */}
+        {showAdvancedFilters && (
+          <div className="p-2.5 bg-slate-900/90 border border-slate-800 rounded-2xl space-y-2 text-xs animate-in fade-in duration-150">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[11px] font-bold text-slate-400 mr-1">Tipo:</span>
+              {[
+                { key: 'all', label: 'Tutti' },
+                { key: 'uscite', label: 'Solo Uscite (-)' },
+                { key: 'entrate', label: 'Solo Entrate (+)' },
+              ].map((opt) => (
+                <button
+                  key={opt.key}
+                  type="button"
+                  onClick={() => setTypeFilter(opt.key as any)}
+                  className={`px-2.5 py-1 rounded-lg font-bold text-[11px] transition-all ${
+                    typeFilter === opt.key
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-slate-950 border border-slate-800 text-slate-300 hover:text-white'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-slate-800">
+              <span className="text-[11px] font-bold text-slate-400 mr-1">Importo:</span>
+              {[
+                { key: 'all', label: 'Qualsiasi' },
+                { key: 'gt50', label: '≥ 50 €' },
+                { key: 'gt100', label: '≥ 100 €' },
+              ].map((opt) => (
+                <button
+                  key={opt.key}
+                  type="button"
+                  onClick={() => setAmountFilter(opt.key as any)}
+                  className={`px-2.5 py-1 rounded-lg font-bold text-[11px] transition-all ${
+                    amountFilter === opt.key
+                      ? 'bg-cyan-600 text-white'
+                      : 'bg-slate-950 border border-slate-800 text-slate-300 hover:text-white'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 3. Riga con Nuovo e Seleziona affiancati */}
       <div className="grid grid-cols-2 gap-2 w-full">
         {onAddClick && (
           <button
@@ -149,10 +400,10 @@ export const TransactionsList: React.FC<Props> = ({
         </button>
       </div>
 
-      {/* 3. Filtri orizzontali a scorrimento a tutta larghezza */}
+      {/* 4. Filtri orizzontali a scorrimento (Tutte, Spese, Fisse, PAC / Titoli) */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar w-full">
         {[
-          { key: 'all', label: `Tutte (${transactions.length})` },
+          { key: 'all', label: `Tutte (${pool.length})` },
           { key: 'variabili', label: 'Spese' },
           { key: 'fisse', label: 'Fisse' },
           { key: 'inv', label: 'PAC / Titoli' },
@@ -204,13 +455,27 @@ export const TransactionsList: React.FC<Props> = ({
         </div>
       )}
 
-      {/* Lista Elementi */}
+      {/* Lista Elementi Filtrati */}
       {filtered.length === 0 ? (
         <div className="py-12 text-center bg-slate-900/60 border border-slate-800 rounded-3xl p-6">
           <Receipt className="w-10 h-10 mx-auto text-slate-500 mb-2 stroke-1" />
-          <p className="text-sm font-bold text-slate-300">Nessun movimento registrato</p>
+          <p className="text-sm font-bold text-slate-300">
+            {searchQuery
+              ? `Nessun risultato per "${searchQuery}"`
+              : 'Nessun movimento registrato'}
+          </p>
           <p className="text-xs text-slate-400 mt-1">
-            Usa il tasto <span className="text-emerald-400 font-bold">+</span> per segnare una spesa o carica i movimenti
+            {searchQuery ? (
+              <button
+                type="button"
+                onClick={clearAllFilters}
+                className="text-emerald-400 font-bold underline"
+              >
+                Clicca qui per azzerare la ricerca
+              </button>
+            ) : (
+              <>Usa il tasto <span className="text-emerald-400 font-bold">+</span> per segnare una spesa</>
+            )}
           </p>
         </div>
       ) : (
@@ -326,7 +591,7 @@ export const TransactionsList: React.FC<Props> = ({
                   {/* Badge e Dettagli */}
                   <div className="flex items-center gap-1.5 flex-wrap text-xs">
                     <span className="font-mono font-bold text-slate-200">
-                      {formatDate(tx.date)}
+                      {formatDate(tx.date, searchScope === 'all')}
                     </span>
                     <span className="text-slate-600">•</span>
                     <span className="font-semibold text-slate-200 capitalize">
