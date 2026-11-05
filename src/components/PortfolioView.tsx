@@ -261,7 +261,7 @@ export const PortfolioView: React.FC<Props> = ({ allTransactions }) => {
           newMarketPrice = 48.45;
           newCurrentValue = Math.round(asset.quantity * newMarketPrice * 100) / 100;
         } else if (asset.symbol === 'INTEL' && asset.quantity) {
-          newMarketPrice = 84.30; // Dossier Fineco
+          newMarketPrice = 49.47; // Prezzo di mercato effettivo Fineco
           newCurrentValue = Math.round(asset.quantity * newMarketPrice * 100) / 100;
         }
 

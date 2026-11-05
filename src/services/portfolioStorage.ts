@@ -1,6 +1,6 @@
 import { PortfolioData, PortfolioAsset } from '../types';
 
-const PORTFOLIO_STORAGE_KEY = 'spese_gianluca_portfolio_v2';
+const PORTFOLIO_STORAGE_KEY = 'spese_gianluca_portfolio_v3';
 
 // Dati reali completi con quantità esatte, ISIN, PMC e prezzi di mercato aggiornati
 export const DEFAULT_PORTFOLIO_DATA: PortfolioData = {
@@ -85,9 +85,9 @@ export const DEFAULT_PORTFOLIO_DATA: PortfolioData = {
       type: 'azioni',
       quantity: 116,
       averagePrice: 34.586,
-      marketPrice: 84.3, // Prezzo Fineco dossier al 27/10
+      marketPrice: 49.47, // Prezzo corrente effettivo Fineco (era 84.30 nel vecchio screenshot)
       invested: 4011.93,
-      currentValue: 9778.8, // 116 * 84.30
+      currentValue: 5738.52, // 116 * 49.47
       notes: 'Azioni Intel Corp (NASDAQ)',
       lastUpdated: new Date().toISOString().split('T')[0],
     },
