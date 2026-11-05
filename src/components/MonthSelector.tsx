@@ -66,25 +66,25 @@ export const MonthSelector: React.FC<Props> = ({ yearMonth, onChange }) => {
   };
 
   return (
-    <div className="flex items-center justify-between bg-slate-900/90 border border-slate-800 rounded-2xl p-2 px-3 shadow-sm gap-2">
+    <div className="flex items-center justify-between bg-slate-900 border border-slate-700/80 rounded-2xl p-2 px-3 shadow-md gap-2">
       <button
         onClick={handlePrev}
         disabled={isAll}
-        className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 transition-all"
+        className="p-2.5 rounded-xl text-slate-200 hover:text-white hover:bg-slate-800 disabled:opacity-20 disabled:cursor-not-allowed active:scale-95 transition-all"
         aria-label="Mese precedente"
       >
         <ChevronLeft className="w-5 h-5" />
       </button>
 
       <div className="flex items-center gap-2 flex-wrap justify-center text-center">
-        <span className="font-bold text-sm sm:text-base text-slate-100 tracking-tight">
+        <span className="font-black text-base sm:text-lg text-white tracking-tight">
           {capitalized}
         </span>
 
         {!isCurrentMonth && !isAll && (
           <button
             onClick={handleToday}
-            className="text-[11px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-medium hover:bg-emerald-500/20 transition-all"
+            className="text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2.5 py-0.5 rounded-full font-bold hover:bg-emerald-500/30 transition-all"
           >
             Oggi
           </button>
@@ -93,14 +93,14 @@ export const MonthSelector: React.FC<Props> = ({ yearMonth, onChange }) => {
         {/* Toggle Tutti i Movimenti vs Per Mese */}
         <button
           onClick={handleToggleAll}
-          className={`text-[11px] px-2.5 py-0.5 rounded-full font-semibold border flex items-center gap-1 transition-all ${
+          className={`text-xs px-3 py-0.5 rounded-full font-bold border flex items-center gap-1.5 transition-all ${
             isAll
-              ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-300'
-              : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white'
+              ? 'bg-cyan-500/20 border-cyan-400/50 text-cyan-300 shadow-sm'
+              : 'bg-slate-800 border-slate-700 text-slate-200 hover:text-white'
           }`}
           title={isAll ? 'Passa alla visualizzazione per singolo mese' : 'Visualizza tutti i movimenti dello storico'}
         >
-          <Layers className="w-3 h-3" />
+          <Layers className="w-3.5 h-3.5" />
           <span>{isAll ? 'Per Mese' : 'Tutti'}</span>
         </button>
       </div>
@@ -108,7 +108,7 @@ export const MonthSelector: React.FC<Props> = ({ yearMonth, onChange }) => {
       <button
         onClick={handleNext}
         disabled={isAll}
-        className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 transition-all"
+        className="p-2.5 rounded-xl text-slate-200 hover:text-white hover:bg-slate-800 disabled:opacity-20 disabled:cursor-not-allowed active:scale-95 transition-all"
         aria-label="Mese successivo"
       >
         <ChevronRight className="w-5 h-5" />

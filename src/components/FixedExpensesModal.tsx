@@ -482,7 +482,7 @@ export const FixedExpensesModal: React.FC<Props> = ({
                     )}
                   </div>
 
-                  <div className="flex items-center gap-2 text-[11px] text-slate-500 mt-0.5">
+                  <div className="flex items-center gap-2 text-xs text-slate-400 mt-0.5">
                     <span className="capitalize">{CATEGORIES[item.category]?.label.split(' ')[0] || item.category}</span>
                     <span>•</span>
                     <span>Giorno {item.defaultDay || 1} del mese</span>

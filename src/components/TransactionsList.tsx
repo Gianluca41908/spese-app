@@ -90,22 +90,22 @@ export const TransactionsList: React.FC<Props> = ({
   return (
     <div className="space-y-3">
       {/* Barra Azioni & Filtri */}
-      <div className="flex items-center justify-between gap-2 flex-wrap">
-        {/* Filtri orizzontali */}
+      <div className="flex items-center justify-between gap-2">
+        {/* Filtri orizzontali a scorrimento */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar flex-1 min-w-0">
           {[
             { key: 'all', label: `Tutte (${transactions.length})` },
             { key: 'variabili', label: 'Spese' },
             { key: 'fisse', label: 'Fisse' },
-            { key: 'inv', label: 'PAC / INV' },
+            { key: 'inv', label: 'PAC / Titoli' },
           ].map((tab) => (
             <button
               key={tab.key}
               onClick={() => setFilter(tab.key as any)}
-              className={`px-3 py-1.5 rounded-full whitespace-nowrap font-medium transition-all ${
+              className={`px-3 py-1.5 rounded-xl whitespace-nowrap font-bold text-xs transition-all ${
                 filter === tab.key
-                  ? 'bg-emerald-600 text-white shadow-sm'
-                  : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white'
+                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/40'
+                  : 'bg-slate-900 border border-slate-700/80 text-slate-200 hover:text-white'
               }`}
             >
               {tab.label}
@@ -124,10 +124,10 @@ export const TransactionsList: React.FC<Props> = ({
               setIsSelecting(true);
             }
           }}
-          className={`px-2.5 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all shrink-0 ${
+          className={`px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all shrink-0 ${
             isSelecting
-              ? 'bg-rose-950/60 border-rose-500/50 text-rose-300'
-              : 'bg-slate-900 border-slate-800 text-slate-300 hover:text-white'
+              ? 'bg-rose-950/70 border-rose-500/70 text-rose-200 shadow-md'
+              : 'bg-slate-900 border-slate-700 text-slate-200 hover:text-white'
           }`}
           title="Seleziona movimenti multipli per cancellarli"
         >
@@ -171,15 +171,15 @@ export const TransactionsList: React.FC<Props> = ({
 
       {/* Lista Elementi */}
       {filtered.length === 0 ? (
-        <div className="py-12 text-center bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6">
-          <Receipt className="w-10 h-10 mx-auto text-slate-600 mb-2 stroke-1" />
-          <p className="text-sm font-semibold text-slate-400">Nessun movimento registrato</p>
-          <p className="text-xs text-slate-500 mt-1">
+        <div className="py-12 text-center bg-slate-900/60 border border-slate-800 rounded-3xl p-6">
+          <Receipt className="w-10 h-10 mx-auto text-slate-500 mb-2 stroke-1" />
+          <p className="text-sm font-bold text-slate-300">Nessun movimento registrato</p>
+          <p className="text-xs text-slate-400 mt-1">
             Usa il tasto <span className="text-emerald-400 font-bold">+</span> per segnare una spesa o carica i movimenti
           </p>
         </div>
       ) : (
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           {filtered.map((tx) => {
             const isSelected = selectedIds.has(tx.id);
 
@@ -193,116 +193,125 @@ export const TransactionsList: React.FC<Props> = ({
                     onEdit(tx);
                   }
                 }}
-                className={`p-3 rounded-2xl border transition-all flex items-center justify-between gap-3 cursor-pointer group ${
+                className={`p-3.5 sm:p-4 rounded-2xl border transition-all cursor-pointer group ${
                   isSelected
-                    ? 'bg-rose-950/20 border-rose-500/60 ring-1 ring-rose-500/30'
+                    ? 'bg-rose-950/30 border-rose-500/70 ring-2 ring-rose-500/40 shadow-lg'
                     : tx.isSettled
-                    ? 'bg-slate-900/90 border-slate-800 hover:border-slate-700 hover:bg-slate-900'
-                    : 'bg-slate-950 border-dashed border-amber-500/40 hover:bg-slate-900/60'
+                    ? 'bg-slate-900/95 border-slate-800 hover:border-slate-700 hover:bg-slate-900 shadow-sm'
+                    : 'bg-slate-950 border-dashed border-amber-500/60 hover:bg-slate-900/70 shadow-sm'
                 }`}
               >
-                {/* Selettore checkbox in modalità selezione */}
-                {isSelecting ? (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleToggleSelect(tx.id);
-                    }}
-                    className="p-1 shrink-0 text-slate-400 hover:text-white"
-                  >
-                    {isSelected ? (
-                      <CheckSquare className="w-5 h-5 text-rose-400" />
+                {/* RIGA 1: Checkbox / Spunta + Descrizione Completa (senza truncate) + Importo */}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                    {/* Selettore o Bottone Spunta */}
+                    {isSelecting ? (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleSelect(tx.id);
+                        }}
+                        className="mt-0.5 p-1 shrink-0 text-slate-300 hover:text-white"
+                      >
+                        {isSelected ? (
+                          <CheckSquare className="w-5 h-5 text-rose-400" />
+                        ) : (
+                          <Square className="w-5 h-5 text-slate-400" />
+                        )}
+                      </button>
                     ) : (
-                      <Square className="w-5 h-5 text-slate-500" />
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onToggleSettled(tx.id);
+                        }}
+                        className="mt-0.5 text-slate-400 hover:text-emerald-400 transition-colors p-1 shrink-0"
+                        title={
+                          tx.isSettled
+                            ? 'Contabilizzato (clicca per segnare come provvisorio)'
+                            : 'Provvisorio (clicca per segnare come contabilizzato)'
+                        }
+                      >
+                        {tx.isSettled ? (
+                          <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                        ) : (
+                          <Circle className="w-5 h-5 text-amber-400" />
+                        )}
+                      </button>
                     )}
-                  </button>
-                ) : (
-                  /* Bottone Spunta Contabilizzato in modalità normale */
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onToggleSettled(tx.id);
-                    }}
-                    className="text-slate-500 hover:text-emerald-400 transition-colors p-1 shrink-0"
-                    title={
-                      tx.isSettled
-                        ? 'Contabilizzato (clicca per segnare come provvisorio)'
-                        : 'Provvisorio (clicca per segnare come contabilizzato)'
-                    }
-                  >
-                    {tx.isSettled ? (
-                      <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                    ) : (
-                      <Circle className="w-5 h-5 text-amber-500/80 hover:text-amber-400" />
-                    )}
-                  </button>
-                )}
 
-                {/* Dettagli Spesa */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {/* Descrizione: leggibile al 100%, non troncata */}
+                    <div className="flex-1 min-w-0">
+                      <h3
+                        className={`font-bold text-sm sm:text-base leading-snug break-words transition-colors ${
+                          isSelected
+                            ? 'text-rose-100'
+                            : 'text-white group-hover:text-emerald-300'
+                        }`}
+                      >
+                        {tx.description}
+                      </h3>
+                    </div>
+                  </div>
+
+                  {/* Importo in evidenza a destra */}
+                  <div className="text-right shrink-0 ml-2">
                     <span
-                      className={`font-semibold text-sm truncate transition-colors ${
-                        isSelected
-                          ? 'text-rose-200'
-                          : 'text-slate-100 group-hover:text-emerald-300'
+                      className={`font-mono font-black text-base sm:text-lg tracking-tight ${
+                        tx.type === 'entrata' ? 'text-emerald-400' : 'text-slate-100'
                       }`}
                     >
-                      {tx.description}
+                      {tx.type === 'entrata' ? '+' : '-'}
+                      {formatEuro(tx.amount)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* RIGA 2: Metadati (Data, Categoria, Badge FISSA / INV / In attesa) + Tasti Rapidi Modifica / Elimina */}
+                <div className="mt-2 pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2">
+                  {/* Badge e Dettagli */}
+                  <div className="flex items-center gap-1.5 flex-wrap text-xs">
+                    <span className="font-mono font-bold text-slate-200">
+                      {formatDate(tx.date)}
+                    </span>
+                    <span className="text-slate-600">•</span>
+                    <span className="font-semibold text-slate-200 capitalize">
+                      {tx.category}
                     </span>
                     {tx.isInvestment && (
-                      <span className="text-[10px] bg-cyan-500/20 text-cyan-300 px-1.5 py-0.2 rounded font-bold uppercase shrink-0">
+                      <span className="text-[10px] bg-cyan-500/20 border border-cyan-400/40 text-cyan-300 px-1.5 py-0.5 rounded font-black uppercase">
                         INV
                       </span>
                     )}
                     {tx.isFixed && (
-                      <span className="text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.2 rounded font-medium shrink-0">
+                      <span className="text-[10px] bg-indigo-500/20 border border-indigo-400/40 text-indigo-300 px-1.5 py-0.5 rounded font-black uppercase">
                         FISSA
                       </span>
                     )}
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
-                    <span className="font-mono">{formatDate(tx.date)}</span>
-                    <span>•</span>
-                    <span className="capitalize">{tx.category}</span>
                     {!tx.isSettled && (
-                      <>
-                        <span>•</span>
-                        <span className="text-amber-400/90 text-[11px] font-medium">In attesa</span>
-                      </>
+                      <span className="text-[10px] bg-amber-500/20 border border-amber-400/40 text-amber-300 px-1.5 py-0.5 rounded font-black uppercase">
+                        In attesa
+                      </span>
                     )}
                   </div>
-                </div>
 
-                {/* Importo e Azioni */}
-                <div className="flex items-center gap-2 shrink-0">
-                  <span
-                    className={`font-mono font-bold text-sm sm:text-base ${
-                      tx.type === 'entrata' ? 'text-emerald-400' : 'text-slate-100'
-                    }`}
-                  >
-                    {tx.type === 'entrata' ? '+' : '-'}
-                    {formatEuro(tx.amount)}
-                  </span>
-
+                  {/* Tasti Azione Rapida a destra (Pencil & Trash) */}
                   {!isSelecting && (
-                    <div className="flex items-center gap-1">
-                      {/* Tasto Modifica */}
+                    <div className="flex items-center gap-1 shrink-0">
                       <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           onEdit(tx);
                         }}
-                        className="text-slate-500 hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-800 transition-colors"
+                        className="text-slate-300 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 active:scale-95 transition-all"
                         title="Modifica movimento"
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
 
-                      {/* Tasto Elimina Singolo */}
                       <button
                         type="button"
                         onClick={(e) => {
@@ -311,7 +320,7 @@ export const TransactionsList: React.FC<Props> = ({
                             onDelete(tx.id);
                           }
                         }}
-                        className="text-slate-600 hover:text-rose-400 p-1.5 rounded-lg hover:bg-slate-800 transition-colors"
+                        className="text-slate-400 hover:text-rose-400 p-1.5 rounded-lg hover:bg-slate-800 active:scale-95 transition-all"
                         title="Elimina"
                       >
                         <Trash2 className="w-4 h-4" />

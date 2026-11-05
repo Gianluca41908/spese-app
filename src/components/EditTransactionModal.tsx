@@ -219,8 +219,8 @@ export const EditTransactionModal: React.FC<Props> = ({
             {type === 'uscita' && (
               <label className="flex items-center justify-between cursor-pointer">
                 <div>
-                  <span className="font-semibold text-slate-200">Investimento (PAC / Titoli)</span>
-                  <p className="text-[11px] text-slate-500">
+                  <span className="font-bold text-slate-200">Investimento (PAC / Titoli)</span>
+                  <p className="text-xs text-slate-400 mt-0.5">
                     Escluso dal totale "Spese Vive"
                   </p>
                 </div>
@@ -234,10 +234,10 @@ export const EditTransactionModal: React.FC<Props> = ({
             )}
 
             {/* Toggle Contabilizzato */}
-            <label className="flex items-center justify-between cursor-pointer pt-2 border-t border-slate-900">
+            <label className="flex items-center justify-between cursor-pointer pt-2.5 border-t border-slate-900">
               <div>
-                <span className="font-semibold text-slate-200">Contabilizzato in Banca</span>
-                <p className="text-[11px] text-slate-500">
+                <span className="font-bold text-slate-200">Contabilizzato in Banca</span>
+                <p className="text-xs text-slate-400 mt-0.5">
                   {isSettled
                     ? 'Movimento già addebitato / registrato'
                     : 'Movimento provvisorio / programmato'}
@@ -252,10 +252,10 @@ export const EditTransactionModal: React.FC<Props> = ({
             </label>
 
             {/* Toggle Spesa Fissa */}
-            <label className="flex items-center justify-between cursor-pointer pt-2 border-t border-slate-900">
+            <label className="flex items-center justify-between cursor-pointer pt-2.5 border-t border-slate-900">
               <div>
-                <span className="font-semibold text-slate-200">Voce Fissa / Ricorrente</span>
-                <p className="text-[11px] text-slate-500">
+                <span className="font-bold text-slate-200">Voce Fissa / Ricorrente</span>
+                <p className="text-xs text-slate-400 mt-0.5">
                   Contrassegna come spesa abituale fissa
                 </p>
               </div>
