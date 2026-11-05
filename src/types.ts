@@ -56,3 +56,23 @@ export interface MonthSummary {
   speseFissePreviste: number;
   speseVariabili: number;
 }
+
+export type AssetClassType = 'liquidita' | 'obbligazioni' | 'etf' | 'azioni' | 'altro';
+
+export interface PortfolioAsset {
+  id: string;
+  name: string;
+  symbol: string;
+  type: AssetClassType;
+  invested: number;
+  currentValue: number;
+  notes?: string;
+  lastUpdated?: string;
+}
+
+export interface PortfolioData {
+  liquidita: number;
+  assets: PortfolioAsset[];
+  lastUpdated: string;
+}
+

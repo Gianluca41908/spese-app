@@ -9,6 +9,7 @@ import {
   RefreshCw,
   PieChart,
   ListChecks,
+  Landmark,
 } from 'lucide-react';
 import {
   getMonthTransactions,
@@ -30,6 +31,7 @@ import { DashboardCards } from './components/DashboardCards';
 import { MonthSelector } from './components/MonthSelector';
 import { TransactionsList } from './components/TransactionsList';
 import { MonthlyAnalytics } from './components/MonthlyAnalytics';
+import { PortfolioView } from './components/PortfolioView';
 import { AddTransactionModal } from './components/AddTransactionModal';
 import { EditTransactionModal } from './components/EditTransactionModal';
 import { FixedExpensesModal } from './components/FixedExpensesModal';
@@ -44,7 +46,7 @@ export const App: React.FC = () => {
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [allTransactions, setAllTransactions] = useState<Transaction[]>(() => getAllTransactions());
-  const [activeTab, setActiveTab] = useState<'movimenti' | 'grafici'>('movimenti');
+  const [activeTab, setActiveTab] = useState<'movimenti' | 'grafici' | 'patrimonio'>('movimenti');
   const [fixedTemplates, setFixedTemplates] = useState<FixedExpenseTemplate[]>(() => getFixedTemplates());
   const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'offline'>('syncing');
 
@@ -222,45 +224,60 @@ export const App: React.FC = () => {
 
       {/* Main Content Container */}
       <main className="max-w-xl mx-auto px-3.5 sm:px-4 pt-3 space-y-3.5 sm:space-y-4">
-        {/* Selettore del Mese */}
-        <MonthSelector
-          yearMonth={selectedYearMonth}
-          onChange={setSelectedYearMonth}
-        />
-
-        {/* Cruscotto KPI (Hero Card con Spese Vive e Saldo) */}
-        <DashboardCards summary={summary} />
-
-        {/* Tab Switcher: Movimenti vs Riepilogo & Grafici */}
-        <div className="grid grid-cols-2 p-1 bg-slate-900 border border-slate-800 rounded-2xl shadow-sm">
+        {/* Tab Switcher: 3 Viste Principali (Movimenti / Analisi Spese / Patrimonio) */}
+        <div className="grid grid-cols-3 p-1 bg-slate-900 border border-slate-800 rounded-2xl shadow-sm">
           <button
             type="button"
             onClick={() => setActiveTab('movimenti')}
-            className={`py-2 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 transition-all ${
+            className={`py-2 px-1 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 transition-all ${
               activeTab === 'movimenti'
                 ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/40'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            <ListChecks className="w-4 h-4" />
-            <span>Movimenti ({transactions.length})</span>
+            <ListChecks className="w-4 h-4 shrink-0" />
+            <span className="truncate">Movimenti</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab('grafici')}
-            className={`py-2 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 transition-all ${
+            className={`py-2 px-1 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 transition-all ${
               activeTab === 'grafici'
                 ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/40'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            <PieChart className="w-4 h-4" />
-            <span>Riepilogo & Grafici</span>
+            <PieChart className="w-4 h-4 shrink-0" />
+            <span className="truncate">Analisi Mese</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('patrimonio')}
+            className={`py-2 px-1 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 transition-all ${
+              activeTab === 'patrimonio'
+                ? 'bg-cyan-600 text-white shadow-md shadow-cyan-950/40'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <Landmark className="w-4 h-4 shrink-0 text-cyan-300" />
+            <span className="truncate">Patrimonio</span>
           </button>
         </div>
 
-        {/* Vista 1: Movimenti Registrati */}
+        {/* Vista 1 & 2 condividono il Selettore Mese e il Cruscotto Mensile */}
+        {activeTab !== 'patrimonio' && (
+          <>
+            <MonthSelector
+              yearMonth={selectedYearMonth}
+              onChange={setSelectedYearMonth}
+            />
+            <DashboardCards summary={summary} />
+          </>
+        )}
+
+        {/* VISTA 1: Movimenti Registrati */}
         {activeTab === 'movimenti' && (
           <>
             {/* Banner Rapido se la lista è vuota */}
@@ -304,7 +321,7 @@ export const App: React.FC = () => {
           </>
         )}
 
-        {/* Vista 2: Riepilogo Categorie & Grafici */}
+        {/* VISTA 2: Riepilogo Categorie & Grafici Mensili */}
         {activeTab === 'grafici' && (
           <section className="pt-1">
             <MonthlyAnalytics
@@ -315,6 +332,13 @@ export const App: React.FC = () => {
               summary={summary}
               onEditTransaction={(tx) => setEditingTransaction(tx)}
             />
+          </section>
+        )}
+
+        {/* VISTA 3: Patrimonio Netto, Titoli & Rendite Passive */}
+        {activeTab === 'patrimonio' && (
+          <section className="pt-1">
+            <PortfolioView allTransactions={allTransactions} />
           </section>
         )}
       </main>
