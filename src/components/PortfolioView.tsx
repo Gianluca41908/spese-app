@@ -27,6 +27,7 @@ import {
   DEFAULT_PORTFOLIO_DATA,
 } from '../services/portfolioStorage';
 import { EditAssetModal } from './EditAssetModal';
+import { formatEuro, formatNumber, formatPercent } from '../utils/formatters';
 
 interface Props {
   allTransactions: Transaction[];
@@ -88,14 +89,6 @@ export const PortfolioView: React.FC<Props> = ({ allTransactions }) => {
   const [isUpdatingQuotes, setIsUpdatingQuotes] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
   const [syncStatusMsg, setSyncStatusMsg] = useState<string | null>(null);
-
-  const formatEuro = (amount: number) => {
-    return new Intl.NumberFormat('it-IT', {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 2,
-    }).format(amount);
-  };
 
   const formatDate = (dateStr: string) => {
     const parts = dateStr.split('-');
@@ -335,7 +328,7 @@ export const PortfolioView: React.FC<Props> = ({ allTransactions }) => {
           </div>
           <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-xl border border-emerald-500/30">
             <ArrowUpRight className="w-4 h-4" />
-            <span>+{formatEuro(totals.totalProfit)} ({totals.profitPercentage.toFixed(1)}%)</span>
+            <span>+{formatEuro(totals.totalProfit)} ({formatPercent(totals.profitPercentage, 1)})</span>
           </div>
         </div>
 
@@ -360,7 +353,7 @@ export const PortfolioView: React.FC<Props> = ({ allTransactions }) => {
               {formatEuro(portfolio.liquidita)}
             </div>
             <span className="text-[10px] text-slate-400 font-medium">
-              {((portfolio.liquidita / totals.netWorth) * 100).toFixed(1)}% del patrimonio
+              {formatPercent((portfolio.liquidita / totals.netWorth) * 100, 1)} del patrimonio
             </span>
           </div>
 
@@ -402,7 +395,7 @@ export const PortfolioView: React.FC<Props> = ({ allTransactions }) => {
                   inputMode="decimal"
                   value={liquidityInput}
                   onChange={(e) => setLiquidityInput(e.target.value)}
-                  placeholder="38117.00"
+                  placeholder="38.117,00"
                   className="w-full bg-slate-950 border border-cyan-500/50 rounded-2xl py-3 pl-8 pr-3 text-2xl font-black font-mono text-white focus:outline-none focus:border-cyan-500"
                   autoFocus
                 />
@@ -487,7 +480,7 @@ export const PortfolioView: React.FC<Props> = ({ allTransactions }) => {
             <span className="text-xs font-black text-cyan-400">
               {selectedClass === 'all'
                 ? '100% Wallet'
-                : `${classBreakdown.find((c) => c.key === selectedClass)?.pctOnNetWorth.toFixed(1)}%`}
+                : formatPercent(classBreakdown.find((c) => c.key === selectedClass)?.pctOnNetWorth, 1)}
             </span>
           </div>
         </div>
@@ -524,7 +517,7 @@ export const PortfolioView: React.FC<Props> = ({ allTransactions }) => {
                 />
                 <span>{item.config.label.split(' ')[0]}</span>
                 <span className="font-mono text-[11px] opacity-90">
-                  {item.pctOnNetWorth.toFixed(0)}%
+                  {formatPercent(item.pctOnNetWorth, 0)}
                 </span>
               </button>
             );
@@ -655,7 +648,7 @@ export const PortfolioView: React.FC<Props> = ({ allTransactions }) => {
                       <span>
                         {isProfit ? '+' : ''}
                         {formatEuro(profit)} ({isProfit ? '+' : ''}
-                        {profitPct.toFixed(1)}%)
+                        {formatPercent(profitPct, 1)})
                       </span>
                     </div>
                   </div>
@@ -709,12 +702,12 @@ export const PortfolioView: React.FC<Props> = ({ allTransactions }) => {
             <div className="p-2 rounded-xl bg-slate-900 border border-slate-800">
               <span className="text-amber-400 font-bold block">BTP (Cedole Semestrali)</span>
               <span className="text-slate-200 font-mono font-semibold block">Febbraio & Agosto</span>
-              <span className="text-[10px] text-slate-400">~220 € lordi (192,50 € netti)</span>
+              <span className="text-[10px] text-slate-400">~220,00 € lordi (192,50 € netti)</span>
             </div>
             <div className="p-2 rounded-xl bg-slate-900 border border-slate-800">
               <span className="text-purple-400 font-bold block">Enel (Dividendi)</span>
               <span className="text-slate-200 font-mono font-semibold block">Gennaio & Luglio</span>
-              <span className="text-[10px] text-slate-400">~80-90 € netti a tranche</span>
+              <span className="text-[10px] text-slate-400">~80,00 - 90,00 € netti a tranche</span>
             </div>
           </div>
         </div>

@@ -617,6 +617,23 @@ export function exportMonthToExcel(transactions: Transaction[], monthLabel: stri
   });
 
   const worksheet = XLSX.utils.json_to_sheet(rows);
+
+  // Applica lo stile separatore/valuta alle colonne Entrate (col B) e Uscite (col C)
+  if (worksheet['!ref']) {
+    const range = XLSX.utils.decode_range(worksheet['!ref']);
+    const fmtCurrency = '_-"€"* #,##0.00_-;\\-"€"* #,##0.00_-;_-"€"* "-"??_-;_-@_-';
+    for (let R = range.s.r + 1; R <= range.e.r; ++R) {
+      const bCell = worksheet[XLSX.utils.encode_cell({ r: R, c: 1 })];
+      if (bCell && typeof bCell.v === 'number') {
+        bCell.z = fmtCurrency;
+      }
+      const cCell = worksheet[XLSX.utils.encode_cell({ r: R, c: 2 })];
+      if (cCell && typeof cCell.v === 'number') {
+        cCell.z = fmtCurrency;
+      }
+    }
+  }
+
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, monthLabel);
 

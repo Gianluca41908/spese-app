@@ -26,6 +26,7 @@ import {
 import { Transaction, MonthSummary, CategoryKey } from '../types';
 import { CATEGORIES } from '../constants';
 import { getSmartTitle } from '../utils/transactionFormatters';
+import { formatEuro, formatPercent, formatNumber } from '../utils/formatters';
 
 interface Props {
   transactions: Transaction[];
@@ -140,14 +141,6 @@ export const MonthlyAnalytics: React.FC<Props> = ({
   const [selectedCatKey, setSelectedCatKey] = useState<string | null>(null);
   // Categoria espansa per vedere l'elenco dei singoli movimenti
   const [expandedCatKey, setExpandedCatKey] = useState<string | null>(null);
-
-  const formatEuro = (amount: number) => {
-    return new Intl.NumberFormat('it-IT', {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 2,
-    }).format(amount);
-  };
 
   const formatDate = (dateStr: string) => {
     const parts = dateStr.split('-');
@@ -446,7 +439,7 @@ export const MonthlyAnalytics: React.FC<Props> = ({
                       {formatEuro(activeCatInfo.total)}
                     </span>
                     <span className="text-xs font-black text-emerald-400">
-                      {activeCatInfo.percentage.toFixed(1)}%
+                      {formatPercent(activeCatInfo.percentage, 1)}
                     </span>
                   </>
                 ) : (
@@ -489,7 +482,7 @@ export const MonthlyAnalytics: React.FC<Props> = ({
                     />
                     <span>{cat.label.split(' ')[0]}</span>
                     <span className="font-mono text-[11px] opacity-90">
-                      {cat.percentage.toFixed(0)}%
+                      {formatPercent(cat.percentage, 0)}
                     </span>
                   </button>
                 );
@@ -566,7 +559,7 @@ export const MonthlyAnalytics: React.FC<Props> = ({
                           <span
                             className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-black uppercase ${style.bg} ${style.text} border ${style.border}`}
                           >
-                            {cat.percentage.toFixed(1)}% incidenza
+                            {formatPercent(cat.percentage, 1)} incidenza
                           </span>
                         </div>
                       </div>
@@ -650,17 +643,17 @@ export const MonthlyAnalytics: React.FC<Props> = ({
                       <div
                         className="bg-rose-500 h-full transition-all"
                         style={{ width: `${pctVive}%` }}
-                        title={`Spese Vive: ${pctVive.toFixed(1)}%`}
+                        title={`Spese Vive: ${formatPercent(pctVive, 1)}`}
                       />
                       <div
                         className="bg-cyan-500 h-full transition-all"
                         style={{ width: `${pctInv}%` }}
-                        title={`Investiti: ${pctInv.toFixed(1)}%`}
+                        title={`Investiti: ${formatPercent(pctInv, 1)}`}
                       />
                       <div
                         className="bg-emerald-500 h-full transition-all"
                         style={{ width: `${pctRisparmio}%` }}
-                        title={`Risparmio netto: ${pctRisparmio.toFixed(1)}%`}
+                        title={`Risparmio netto: ${formatPercent(pctRisparmio, 1)}`}
                       />
                     </div>
 
@@ -668,19 +661,19 @@ export const MonthlyAnalytics: React.FC<Props> = ({
                       <div className="p-1.5 rounded-xl bg-slate-950 border border-slate-800">
                         <span className="text-rose-400 font-bold block">Spese Vive</span>
                         <span className="font-mono font-bold text-slate-200">
-                          {pctVive.toFixed(0)}%
+                          {formatPercent(pctVive, 0)}
                         </span>
                       </div>
                       <div className="p-1.5 rounded-xl bg-slate-950 border border-slate-800">
                         <span className="text-cyan-400 font-bold block">Investiti</span>
                         <span className="font-mono font-bold text-slate-200">
-                          {pctInv.toFixed(0)}%
+                          {formatPercent(pctInv, 0)}
                         </span>
                       </div>
                       <div className="p-1.5 rounded-xl bg-slate-950 border border-slate-800">
                         <span className="text-emerald-400 font-bold block">Risparmio</span>
                         <span className="font-mono font-bold text-slate-200">
-                          {pctRisparmio.toFixed(0)}%
+                          {formatPercent(pctRisparmio, 0)}
                         </span>
                       </div>
                     </div>
@@ -717,7 +710,7 @@ export const MonthlyAnalytics: React.FC<Props> = ({
                       title={`${m.label}: Spese ${formatEuro(totalMese)}`}
                     >
                       <span className="text-[10px] font-mono text-slate-400 font-semibold truncate max-w-full">
-                        {Math.round(totalMese)}€
+                        {formatNumber(Math.round(totalMese), 0, 0)} €
                       </span>
                       <div className="w-full bg-slate-950 rounded-lg p-0.5 h-20 flex items-end">
                         <div

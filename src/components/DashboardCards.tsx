@@ -1,20 +1,13 @@
 import React from 'react';
 import { ArrowDownRight, ArrowUpRight, TrendingUp } from 'lucide-react';
 import { MonthSummary } from '../types';
+import { formatEuro } from '../utils/formatters';
 
 interface Props {
   summary: MonthSummary;
 }
 
 export const DashboardCards: React.FC<Props> = ({ summary }) => {
-  const formatEuro = (num: number) => {
-    return new Intl.NumberFormat('it-IT', {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 2,
-    }).format(num);
-  };
-
   const isAttivo = summary.saldoSenzaInvestimenti >= 0;
 
   return (

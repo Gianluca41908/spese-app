@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { Transaction } from '../types';
 import { getSmartTitle } from '../utils/transactionFormatters';
+import { formatEuro } from '../utils/formatters';
 
 interface Props {
   transactions: Transaction[];
@@ -50,14 +51,6 @@ export const TransactionsList: React.FC<Props> = ({
   const [amountFilter, setAmountFilter] = useState<'all' | 'gt50' | 'gt100'>('all');
   const [typeFilter, setTypeFilter] = useState<'all' | 'uscite' | 'entrate'>('all');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-
-  const formatEuro = (amount: number) => {
-    return new Intl.NumberFormat('it-IT', {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 2,
-    }).format(amount);
-  };
 
   const formatDate = (dateStr: string, showYear = false) => {
     const parts = dateStr.split('-');

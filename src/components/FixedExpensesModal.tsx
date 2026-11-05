@@ -11,6 +11,7 @@ import {
 import { FixedExpenseTemplate, CategoryKey, TransactionType } from '../types';
 import { CATEGORIES } from '../constants';
 import { getFixedTemplates, resetFixedTemplatesToDefault } from '../services/storage';
+import { formatEuro } from '../utils/formatters';
 
 interface Props {
   isOpen: boolean;
@@ -162,14 +163,6 @@ export const FixedExpensesModal: React.FC<Props> = ({
       onSaveTemplates(def);
       setEditingId(null);
     }
-  };
-
-  const formatEuro = (amount: number) => {
-    return new Intl.NumberFormat('it-IT', {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 2,
-    }).format(amount);
   };
 
   return (

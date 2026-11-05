@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, Trash2, Calculator, Info } from 'lucide-react';
 import { PortfolioAsset, AssetClassType } from '../types';
+import { formatNumber } from '../utils/formatters';
 
 interface Props {
   isOpen: boolean;
@@ -255,7 +256,7 @@ export const EditAssetModal: React.FC<Props> = ({
                 <input
                   type="text"
                   inputMode="decimal"
-                  placeholder="es. 5.75"
+                  placeholder="es. 5,75"
                   value={averagePrice}
                   onChange={(e) => {
                     setAveragePrice(e.target.value);
@@ -280,7 +281,7 @@ export const EditAssetModal: React.FC<Props> = ({
                 <input
                   type="text"
                   inputMode="decimal"
-                  placeholder="0.00"
+                  placeholder="0,00"
                   value={invested}
                   onChange={(e) => setInvested(e.target.value)}
                   className="w-full bg-slate-900 border border-slate-700/80 rounded-xl py-1.5 px-3 text-xs font-mono font-bold text-white focus:outline-none focus:border-emerald-500"
@@ -302,7 +303,7 @@ export const EditAssetModal: React.FC<Props> = ({
               <input
                 type="text"
                 inputMode="decimal"
-                placeholder="0.00"
+                placeholder="0,00"
                 value={currentValue}
                 onChange={(e) => setCurrentValue(e.target.value)}
                 className="w-full bg-slate-950 border border-emerald-500/60 rounded-xl py-2.5 pl-8 pr-3 text-xl font-black font-mono text-emerald-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
@@ -311,7 +312,7 @@ export const EditAssetModal: React.FC<Props> = ({
             </div>
             <p className="text-[10px] text-slate-400 mt-1">
               {quantity && marketPrice
-                ? `= ${quantity} ${type === 'obbligazioni' ? 'nominale' : 'quote'} × ${marketPrice} ${type === 'obbligazioni' ? '%' : '€'}`
+                ? `= ${formatNumber(quantity, 0, 3)} ${type === 'obbligazioni' ? 'nominale' : 'quote'} × ${formatNumber(marketPrice, 2, 3)} ${type === 'obbligazioni' ? '%' : '€'}`
                 : 'Puoi calcolarlo da quantità × prezzo oppure inserire direttamente il totale.'}
             </p>
           </div>
