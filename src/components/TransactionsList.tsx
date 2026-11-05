@@ -9,8 +9,11 @@ import {
   Square,
   ListChecks,
   Plus,
+  ChevronDown,
+  FileText,
 } from 'lucide-react';
 import { Transaction } from '../types';
+import { getSmartTitle } from '../utils/transactionFormatters';
 
 interface Props {
   transactions: Transaction[];
@@ -32,6 +35,7 @@ export const TransactionsList: React.FC<Props> = ({
   const [filter, setFilter] = useState<'all' | 'variabili' | 'fisse' | 'inv'>('all');
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const filtered = transactions.filter((t) => {
     if (filter === 'variabili') return !t.isFixed;
@@ -83,11 +87,20 @@ export const TransactionsList: React.FC<Props> = ({
     const count = selectedIds.size;
     if (count === 0) return;
 
-    if (confirm(`Sei sicuro di voler eliminare ${count} movimenti selezionati? L'operazione non può essere annullata.`)) {
+    if (
+      confirm(
+        `Sei sicuro di voler eliminare ${count} movimenti selezionati? L'operazione non può essere annullata.`
+      )
+    ) {
       onDeleteMultiple(Array.from(selectedIds));
       setSelectedIds(new Set());
       setIsSelecting(false);
     }
+  };
+
+  // Toggle Espansione Dettaglio Fineco
+  const handleToggleExpand = (id: string) => {
+    setExpandedId((prev) => (prev === id ? null : id));
   };
 
   return (
@@ -204,6 +217,9 @@ export const TransactionsList: React.FC<Props> = ({
         <div className="space-y-2">
           {filtered.map((tx) => {
             const isSelected = selectedIds.has(tx.id);
+            const smartTitle = getSmartTitle(tx.description, tx.notes);
+            const isExpanded = expandedId === tx.id;
+            const hasFinecoDetails = Boolean(tx.notes && tx.notes.trim().length > 0);
 
             return (
               <div
@@ -212,7 +228,7 @@ export const TransactionsList: React.FC<Props> = ({
                   if (isSelecting) {
                     handleToggleSelect(tx.id);
                   } else {
-                    onEdit(tx);
+                    handleToggleExpand(tx.id);
                   }
                 }}
                 className={`p-3.5 sm:p-4 rounded-2xl border transition-all cursor-pointer group ${
@@ -223,7 +239,7 @@ export const TransactionsList: React.FC<Props> = ({
                     : 'bg-slate-950 border-dashed border-amber-500/60 hover:bg-slate-900/70 shadow-sm'
                 }`}
               >
-                {/* RIGA 1: Checkbox / Spunta + Descrizione Completa (senza truncate) + Importo */}
+                {/* RIGA 1: Checkbox / Spunta + Descrizione Parlante + Importo */}
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-2.5 flex-1 min-w-0">
                     {/* Selettore o Bottone Spunta */}
@@ -264,7 +280,7 @@ export const TransactionsList: React.FC<Props> = ({
                       </button>
                     )}
 
-                    {/* Descrizione: leggibile al 100%, non troncata */}
+                    {/* Descrizione Parlante (es. Spesa Ipercoop Pasteur, Spesa Zara, ecc.) */}
                     <div className="flex-1 min-w-0">
                       <h3
                         className={`font-bold text-sm sm:text-base leading-snug break-words transition-colors ${
@@ -273,12 +289,26 @@ export const TransactionsList: React.FC<Props> = ({
                             : 'text-white group-hover:text-emerald-300'
                         }`}
                       >
-                        {tx.description}
+                        {smartTitle}
                       </h3>
+
+                      {/* Hint cliccabile per aprire dettaglio Fineco */}
+                      {hasFinecoDetails && (
+                        <div className="flex items-center gap-1 mt-0.5 text-[11px] text-slate-400 group-hover:text-emerald-300 transition-colors">
+                          <ChevronDown
+                            className={`w-3 h-3 transition-transform duration-200 ${
+                              isExpanded ? 'rotate-180 text-emerald-400' : ''
+                            }`}
+                          />
+                          <span>
+                            {isExpanded ? 'Nascondi testo Fineco' : 'Vedi testo Fineco'}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
 
-                  {/* Importo in evidenza a destra: VERDE per entrata, ROSSO per uscita */}
+                  {/* Importo: VERDE per entrata (+), ROSSO per uscita (-) */}
                   <div className="text-right shrink-0 ml-2">
                     <span
                       className={`font-mono font-black text-base sm:text-lg tracking-tight ${
@@ -291,7 +321,7 @@ export const TransactionsList: React.FC<Props> = ({
                   </div>
                 </div>
 
-                {/* RIGA 2: Metadati (Data, Categoria, Badge FISSA / INV / In attesa) + Tasti Rapidi Modifica / Elimina */}
+                {/* RIGA 2: Metadati (Data, Categoria, Badge FISSA / INV / In attesa) + Tasti Modifica / Elimina */}
                 <div className="mt-2 pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2">
                   {/* Badge e Dettagli */}
                   <div className="flex items-center gap-1.5 flex-wrap text-xs">
@@ -319,7 +349,7 @@ export const TransactionsList: React.FC<Props> = ({
                     )}
                   </div>
 
-                  {/* Tasti Azione Rapida a destra (Pencil & Trash) */}
+                  {/* Tasti Azione Rapida (Pencil & Trash) */}
                   {!isSelecting && (
                     <div className="flex items-center gap-1 shrink-0">
                       <button
@@ -350,6 +380,27 @@ export const TransactionsList: React.FC<Props> = ({
                     </div>
                   )}
                 </div>
+
+                {/* ACCORDION ESPANDIBILE: Testo Esatto Completo Fineco (visibile SOLO al click) */}
+                {isExpanded && hasFinecoDetails && (
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    className="mt-2.5 pt-2 border-t border-slate-800 text-xs space-y-1.5 animate-in fade-in duration-150"
+                  >
+                    <div className="flex items-center justify-between text-[11px] font-bold text-slate-400">
+                      <span className="flex items-center gap-1.5 text-emerald-400">
+                        <FileText className="w-3.5 h-3.5" />
+                        Testo Esatto Estratto Conto Fineco:
+                      </span>
+                      <span className="font-mono text-[10px] text-slate-500 truncate max-w-[140px]">
+                        {tx.description}
+                      </span>
+                    </div>
+                    <div className="bg-slate-950 border border-slate-800/90 rounded-xl p-2.5 text-xs font-mono text-emerald-200/95 leading-relaxed break-words select-all shadow-inner">
+                      {tx.notes}
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}

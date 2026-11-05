@@ -213,6 +213,20 @@ export const EditTransactionModal: React.FC<Props> = ({
             />
           </div>
 
+          {/* Note / Dettaglio Fineco */}
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">
+              Note / Dettaglio Fineco
+            </label>
+            <textarea
+              rows={2}
+              placeholder="Dettagli aggiuntivi, testo banca o note personali..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-xs text-slate-300 focus:outline-none focus:border-emerald-500 font-mono"
+            />
+          </div>
+
           {/* Opzioni avanzate (Toggles) */}
           <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-2xl space-y-3 text-xs">
             {/* Toggle Investimento */}
