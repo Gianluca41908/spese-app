@@ -7,9 +7,12 @@ import {
   Database,
   CloudOff,
   RefreshCw,
+  PieChart,
+  ListChecks,
 } from 'lucide-react';
 import {
   getMonthTransactions,
+  getAllTransactions,
   addTransaction,
   updateTransaction,
   deleteTransaction,
@@ -26,6 +29,7 @@ import { Transaction, FixedExpenseTemplate } from './types';
 import { DashboardCards } from './components/DashboardCards';
 import { MonthSelector } from './components/MonthSelector';
 import { TransactionsList } from './components/TransactionsList';
+import { MonthlyAnalytics } from './components/MonthlyAnalytics';
 import { AddTransactionModal } from './components/AddTransactionModal';
 import { EditTransactionModal } from './components/EditTransactionModal';
 import { FixedExpensesModal } from './components/FixedExpensesModal';
@@ -39,6 +43,8 @@ export const App: React.FC = () => {
   const [selectedYearMonth, setSelectedYearMonth] = useState<string>(initialYM);
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [allTransactions, setAllTransactions] = useState<Transaction[]>(() => getAllTransactions());
+  const [activeTab, setActiveTab] = useState<'movimenti' | 'grafici'>('movimenti');
   const [fixedTemplates, setFixedTemplates] = useState<FixedExpenseTemplate[]>(() => getFixedTemplates());
   const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'offline'>('syncing');
 
@@ -53,6 +59,7 @@ export const App: React.FC = () => {
   const loadData = () => {
     const txs = getMonthTransactions(selectedYearMonth);
     setTransactions(txs);
+    setAllTransactions(getAllTransactions());
     setFixedTemplates(getFixedTemplates());
   };
 
@@ -224,42 +231,90 @@ export const App: React.FC = () => {
         {/* Cruscotto KPI (Hero Card con Spese Vive e Saldo) */}
         <DashboardCards summary={summary} />
 
-        {/* Banner Rapido se la lista è vuota */}
-        {transactions.length === 0 && (
-          <div className="p-4 bg-slate-900 border border-slate-800 rounded-3xl flex flex-col sm:flex-row items-center justify-between gap-3 shadow-md">
-            <div className="text-xs text-slate-300 font-medium text-center sm:text-left">
-              Nessun movimento presente. Puoi caricare lo storico completo dal tuo Excel o applicare le spese fisse.
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setIsImportOpen(true)}
-                className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl shrink-0 active:scale-95 transition-all shadow-md"
-              >
-                Carica Storico Excel
-              </button>
-              {selectedYearMonth !== 'ALL' && (
-                <button
-                  onClick={handleApplyFixed}
-                  className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-black text-xs rounded-xl shrink-0 active:scale-95 transition-all"
-                >
-                  Carica Fisse
-                </button>
-              )}
-            </div>
-          </div>
+        {/* Tab Switcher: Movimenti vs Riepilogo & Grafici */}
+        <div className="grid grid-cols-2 p-1 bg-slate-900 border border-slate-800 rounded-2xl shadow-sm">
+          <button
+            type="button"
+            onClick={() => setActiveTab('movimenti')}
+            className={`py-2 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 transition-all ${
+              activeTab === 'movimenti'
+                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/40'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <ListChecks className="w-4 h-4" />
+            <span>Movimenti ({transactions.length})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('grafici')}
+            className={`py-2 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 transition-all ${
+              activeTab === 'grafici'
+                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/40'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <PieChart className="w-4 h-4" />
+            <span>Riepilogo & Grafici</span>
+          </button>
+        </div>
+
+        {/* Vista 1: Movimenti Registrati */}
+        {activeTab === 'movimenti' && (
+          <>
+            {/* Banner Rapido se la lista è vuota */}
+            {transactions.length === 0 && (
+              <div className="p-4 bg-slate-900 border border-slate-800 rounded-3xl flex flex-col sm:flex-row items-center justify-between gap-3 shadow-md">
+                <div className="text-xs text-slate-300 font-medium text-center sm:text-left">
+                  Nessun movimento presente. Puoi caricare lo storico completo dal tuo Excel o applicare le spese fisse.
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setIsImportOpen(true)}
+                    className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl shrink-0 active:scale-95 transition-all shadow-md"
+                  >
+                    Carica Storico Excel
+                  </button>
+                  {selectedYearMonth !== 'ALL' && (
+                    <button
+                      onClick={handleApplyFixed}
+                      className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-black text-xs rounded-xl shrink-0 active:scale-95 transition-all"
+                    >
+                      Carica Fisse
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Lista Movimenti */}
+            <section className="pt-1">
+              <TransactionsList
+                transactions={transactions}
+                onToggleSettled={handleToggleSettled}
+                onDelete={handleDeleteTransaction}
+                onDeleteMultiple={handleDeleteMultipleTransactions}
+                onEdit={(tx) => setEditingTransaction(tx)}
+                onAddClick={() => setIsAddOpen(true)}
+              />
+            </section>
+          </>
         )}
 
-        {/* Lista Movimenti */}
-        <section className="pt-1">
-          <TransactionsList
-            transactions={transactions}
-            onToggleSettled={handleToggleSettled}
-            onDelete={handleDeleteTransaction}
-            onDeleteMultiple={handleDeleteMultipleTransactions}
-            onEdit={(tx) => setEditingTransaction(tx)}
-            onAddClick={() => setIsAddOpen(true)}
-          />
-        </section>
+        {/* Vista 2: Riepilogo Categorie & Grafici */}
+        {activeTab === 'grafici' && (
+          <section className="pt-1">
+            <MonthlyAnalytics
+              transactions={transactions}
+              allTransactions={allTransactions}
+              monthLabel={capitalizedMonthLabel}
+              selectedYearMonth={selectedYearMonth}
+              summary={summary}
+              onEditTransaction={(tx) => setEditingTransaction(tx)}
+            />
+          </section>
+        )}
       </main>
 
       {/* Floating Action Button (FAB) su Mobile */}
