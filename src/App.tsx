@@ -251,25 +251,13 @@ export const App: React.FC = () => {
 
         {/* Lista Movimenti */}
         <section className="pt-1">
-          <div className="flex items-center justify-between mb-2 px-1">
-            <h2 className="text-xs uppercase tracking-wider font-black text-slate-300">
-              Movimenti Registrati ({transactions.length})
-            </h2>
-            <button
-              onClick={() => setIsAddOpen(true)}
-              className="text-xs text-emerald-400 hover:text-emerald-300 font-black flex items-center gap-1 active:scale-95 transition-all"
-            >
-              <Plus className="w-4 h-4 stroke-[2.5]" />
-              <span>Nuovo</span>
-            </button>
-          </div>
-
           <TransactionsList
             transactions={transactions}
             onToggleSettled={handleToggleSettled}
             onDelete={handleDeleteTransaction}
             onDeleteMultiple={handleDeleteMultipleTransactions}
             onEdit={(tx) => setEditingTransaction(tx)}
+            onAddClick={() => setIsAddOpen(true)}
           />
         </section>
       </main>

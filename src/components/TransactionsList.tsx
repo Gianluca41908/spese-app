@@ -8,6 +8,7 @@ import {
   CheckSquare,
   Square,
   ListChecks,
+  Plus,
 } from 'lucide-react';
 import { Transaction } from '../types';
 
@@ -17,6 +18,7 @@ interface Props {
   onDelete: (id: string) => void;
   onDeleteMultiple: (ids: string[]) => void;
   onEdit: (tx: Transaction) => void;
+  onAddClick?: () => void;
 }
 
 export const TransactionsList: React.FC<Props> = ({
@@ -25,6 +27,7 @@ export const TransactionsList: React.FC<Props> = ({
   onDelete,
   onDeleteMultiple,
   onEdit,
+  onAddClick,
 }) => {
   const [filter, setFilter] = useState<'all' | 'variabili' | 'fisse' | 'inv'>('all');
   const [isSelecting, setIsSelecting] = useState(false);
@@ -88,32 +91,27 @@ export const TransactionsList: React.FC<Props> = ({
   };
 
   return (
-    <div className="space-y-3">
-      {/* Barra Azioni & Filtri */}
-      <div className="flex items-center justify-between gap-2">
-        {/* Filtri orizzontali a scorrimento */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar flex-1 min-w-0">
-          {[
-            { key: 'all', label: `Tutte (${transactions.length})` },
-            { key: 'variabili', label: 'Spese' },
-            { key: 'fisse', label: 'Fisse' },
-            { key: 'inv', label: 'PAC / Titoli' },
-          ].map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setFilter(tab.key as any)}
-              className={`px-3 py-1.5 rounded-xl whitespace-nowrap font-bold text-xs transition-all ${
-                filter === tab.key
-                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/40'
-                  : 'bg-slate-900 border border-slate-700/80 text-slate-200 hover:text-white'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+    <div className="space-y-2.5">
+      {/* 1. Titolo Movimenti Registrati a tutta larghezza */}
+      <div className="w-full flex items-center justify-between pb-0.5 px-0.5">
+        <h2 className="text-xs uppercase tracking-wider font-black text-slate-300 w-full">
+          Movimenti Registrati ({transactions.length})
+        </h2>
+      </div>
 
-        {/* Pulsante Attiva/Disattiva Selezione Multipla */}
+      {/* 2. Riga con Nuovo e Seleziona affiancati */}
+      <div className="grid grid-cols-2 gap-2 w-full">
+        {onAddClick && (
+          <button
+            type="button"
+            onClick={onAddClick}
+            className="w-full py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-md shadow-emerald-950/40 active:scale-95 transition-all"
+          >
+            <Plus className="w-4 h-4 stroke-[2.5]" />
+            <span>Nuovo</span>
+          </button>
+        )}
+
         <button
           type="button"
           onClick={() => {
@@ -124,9 +122,11 @@ export const TransactionsList: React.FC<Props> = ({
               setIsSelecting(true);
             }
           }}
-          className={`px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all shrink-0 ${
+          className={`w-full py-2 px-3 rounded-xl border text-xs font-black flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-sm ${
+            !onAddClick ? 'col-span-2' : ''
+          } ${
             isSelecting
-              ? 'bg-rose-950/70 border-rose-500/70 text-rose-200 shadow-md'
+              ? 'bg-rose-950/80 border-rose-500/70 text-rose-200 shadow-md'
               : 'bg-slate-900 border-slate-700 text-slate-200 hover:text-white'
           }`}
           title="Seleziona movimenti multipli per cancellarli"
@@ -134,6 +134,28 @@ export const TransactionsList: React.FC<Props> = ({
           <ListChecks className="w-4 h-4 text-emerald-400" />
           <span>{isSelecting ? 'Annulla' : 'Seleziona'}</span>
         </button>
+      </div>
+
+      {/* 3. Filtri orizzontali a scorrimento a tutta larghezza */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar w-full">
+        {[
+          { key: 'all', label: `Tutte (${transactions.length})` },
+          { key: 'variabili', label: 'Spese' },
+          { key: 'fisse', label: 'Fisse' },
+          { key: 'inv', label: 'PAC / Titoli' },
+        ].map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setFilter(tab.key as any)}
+            className={`px-3.5 py-1.5 rounded-xl whitespace-nowrap font-bold text-xs transition-all ${
+              filter === tab.key
+                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/40'
+                : 'bg-slate-900 border border-slate-700/80 text-slate-200 hover:text-white'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
       {/* Barra di Controllo Selezione Multipla */}
@@ -256,11 +278,11 @@ export const TransactionsList: React.FC<Props> = ({
                     </div>
                   </div>
 
-                  {/* Importo in evidenza a destra */}
+                  {/* Importo in evidenza a destra: VERDE per entrata, ROSSO per uscita */}
                   <div className="text-right shrink-0 ml-2">
                     <span
                       className={`font-mono font-black text-base sm:text-lg tracking-tight ${
-                        tx.type === 'entrata' ? 'text-emerald-400' : 'text-slate-100'
+                        tx.type === 'entrata' ? 'text-emerald-400' : 'text-rose-400'
                       }`}
                     >
                       {tx.type === 'entrata' ? '+' : '-'}

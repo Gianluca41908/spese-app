@@ -37,12 +37,9 @@ export const DashboardCards: React.FC<Props> = ({ summary }) => {
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div className="min-w-0">
-              <span className="text-xs uppercase tracking-wider font-black text-emerald-300 block">
+              <span className="text-xs sm:text-sm uppercase tracking-wider font-black text-emerald-300 block">
                 Margine Senza Investimenti
               </span>
-              <p className="text-xs text-slate-200 mt-0.5 leading-snug font-normal">
-                Entrate ordinarie meno spese vive (escl. BOT e PAC)
-              </p>
             </div>
           </div>
           <span
@@ -56,7 +53,7 @@ export const DashboardCards: React.FC<Props> = ({ summary }) => {
           </span>
         </div>
 
-        <div className="mt-3.5 pt-3 border-t border-emerald-500/20 flex items-baseline justify-between gap-2">
+        <div className="mt-2.5 pt-2.5 border-t border-emerald-500/20 flex items-baseline justify-between gap-2">
           <div className="text-3xl sm:text-4xl font-black tracking-tight text-white font-mono">
             {formatEuro(summary.saldoSenzaInvestimenti)}
           </div>
@@ -66,7 +63,7 @@ export const DashboardCards: React.FC<Props> = ({ summary }) => {
         </div>
       </div>
 
-      {/* Grid 3 Carte: Entrate, Uscite Totali, Investiti */}
+      {/* Grid 3 Carte: Entrate, Uscite (senza investimenti), Investiti */}
       <div className="grid grid-cols-3 gap-2">
         {/* Entrate */}
         <div className="bg-slate-900 border border-slate-700/80 p-2.5 sm:p-3 rounded-2xl shadow-sm">
@@ -79,14 +76,14 @@ export const DashboardCards: React.FC<Props> = ({ summary }) => {
           </div>
         </div>
 
-        {/* Uscite Totali */}
+        {/* Uscite (esclusi investimenti) */}
         <div className="bg-slate-900 border border-slate-700/80 p-2.5 sm:p-3 rounded-2xl shadow-sm">
           <div className="flex items-center gap-1 text-rose-400 text-xs font-bold mb-1">
             <ArrowDownRight className="w-3.5 h-3.5" />
-            <span>Uscite Tot.</span>
+            <span>Uscite</span>
           </div>
-          <div className="text-sm sm:text-base font-extrabold text-white truncate font-mono">
-            {formatEuro(summary.totalUscite)}
+          <div className="text-sm sm:text-base font-extrabold text-rose-400 truncate font-mono">
+            {formatEuro(summary.totalUscite - summary.totalInvestimenti)}
           </div>
         </div>
 
